@@ -5,7 +5,8 @@ var Node = React.createClass({
 
   getInitialState: function() {
     return {
-      label: this.props.label||"",
+      label: this.props.label || "",
+      value: this.props.value || false,
       x: this.props.x|0,
       y: this.props.y|0,
       offset: { x: 0, y: 0 },
