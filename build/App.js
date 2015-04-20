@@ -24212,7 +24212,11 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
   },
 
   getInitialState: function() {
-    return { nodes: [], links: [] };
+    return {
+      nodes: [],
+      links: [],
+      crosslinks: []
+    };
   },
 
   componentWillMount: function() {
@@ -24234,96 +24238,107 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
       userSelect: "none"
     };
 
-    var nodes = this.generateNodes();
-    var links = this.generateLinks();
-
     return (
       React.createElement("div", null, 
         React.createElement("div", {className: "CSSNodeGraph", style:  style }, 
-          React.createElement("div", {className: "nodes"},  nodes ), 
-          React.createElement("div", {className: "links"},  links )
+          React.createElement("div", {className: "nodes"},  this.generateNodes() ), 
+          React.createElement("div", {className: "links"},  this.generateLinks() )
         ), 
-        React.createElement("button", {onClick: this.testNodes}, "add test Nodes"), 
-        React.createElement("button", {onClick: this.testLinks}, "add test Links"), 
-        React.createElement("button", {onClick: this.startWibble}, "wibble")
+        React.createElement("button", {onClick: this.testNodes}, "add test Nodes")
       )
     );
   },
 
-  addNode: function(label, x, y) {
+  componentDidUpdate: function(prevProps, prevState) {
+    if(this.state.crosslinks.length > 0) {
+
+      var crosslinks = this.state.crosslinks.slice();
+      for(var i=crosslinks.length-1; i>=0; i--) {
+        var crosslink = crosslinks[i];
+        var link = this.refs["link" + crosslink.linkid];
+        var from = this.refs["node" + crosslink.from];
+        var to = this.refs["node" + crosslink.to];
+        link.setNodes(from, to);
+      }
+      this.setState({ crosslinks: [] });
+    }
+  },
+
+  addNode: function(label, value, x, y) {
     var id = CSSNodeGraph.nextId();
     var key = "node" + id;
-    this.nodes[id] = { label: label, x: x||0, y: y||0, id: id, key: key, ref: key };
+    this.nodes[id] = {
+      label: label,
+      value: value,
+      x: x||0,
+      y: y||0,
+      id: id,
+      key: key,
+      ref: key
+    };
     Object.keys(this.nodeProps).forEach(function(p)  { this.nodes[id][p] = this.nodeProps[p]; }.bind(this));
     var nodes = Object.keys(this.nodes).map(function(id)  {return this.nodes[id];}.bind(this) );
     this.setState({ nodes: nodes });
-  },
-
-  removeNode: function(id) {
-    var node = this.nodes[id];
-    delete this.nodes[id];
-    var links = node.getLinks();
-    links.forEach(function(linkid) { delete this.links[linkid]; }.bind(this));
-    this.setState({ nodes: this.nodes, links: this.links });
+    return id;
   },
 
   link: function(from, to, direction, label) {
-    if (from === to) return;
-
     direction = direction || 0;
     label = label || "";
     var id = CSSNodeGraph.nextId();
-    var key = "link"+id
-    from = this.refs["node"+from];
-    to = this.refs["node"+to];
-    if (from === to) return;
-
-    from.link(id);
-    to.link(id);
-    this.links[id] = { from: from, to: to, direction: direction||0, ref: key, key: key, id: id };
+    var key = "link" + id;
+    this.links[id] = {
+      from: this.nodes[from],
+      to: this.nodes[to],
+      direction: direction||0,
+      id: id,
+      key: key,
+      ref: key
+    };
     Object.keys(this.linkProps).forEach(function(p)  { this.links[id][p] = this.linkProps[p]; }.bind(this));
     var links = Object.keys(this.links).map(function(id)  {return this.links[id];}.bind(this) );
     this.setState({ links: links });
+    return id;
   },
 
   // RENDERING
 
   generateNodes: function() {
-    return this.state.nodes.map(function(n) { return React.createElement(Node, React.__spread({},  n)); });
+    return this.state.nodes.map(function(n)  {return React.createElement(Node, React.__spread({},  n));});
   },
 
   generateLinks: function() {
-    return this.state.links.map(function(l) { return React.createElement(Link, React.__spread({},  l)); });
+    return this.state.links.map(function(l)  {return React.createElement(Link, React.__spread({},  l));});
   },
 
   // TESTING
 
   testNodes: function() {
-    for(var i=0, size=100, dim=3; i<dim*dim; i++) {
-      this.addNode(String.fromCharCode(65+i), size + (i%dim)*size, size + Math.floor(i/dim)*size);
+    var dims = this.getDOMNode().getBoundingClientRect();
+    var nodecount = 10;
+    var v = 1;
+    var root = this.addNode(v,v,
+      20 + Math.random()*(dims.width-40),
+      20 + Math.random()*(dims.height-40)
+    );
+    var crosslinks = [];
+    while(nodecount-->0) {
+      var vl = v*2,
+          vr = (v-1)/3,
+          left = this.addNode(v*2,v*2,
+            20 + Math.random()*(dims.width - 40),
+            20 + Math.random()*(dims.height - 40)
+          ),
+          right = (!!vr && vr == Math.floor(vr)) ? this.addNode((v-1)/3,(v-1)/3,
+            20 + Math.random()*(dims.width - 40),
+            20 + Math.random()*(dims.height - 40)
+          ) : false;
+      crosslinks.push({ from: root, to: left, linkid: this.link(root,left) });
+      if(right) { crosslinks.push({ from: root, to: right, linkid: this.link(root,right) }); }
+      v = vl;
+      root = left;
     }
-  },
-
-  testLinks: function() {
-    if(this.nodes.length === 0) return;
-    var keys = Object.keys(this.nodes).map(function(id)  {return id|0;});
-    for(var i=0; i<7; i++) {
-      var n1 = (Math.random() * keys.length)|0;
-      do { var n2 = (Math.random() * keys.length)|0; } while (n2 === n1);
-      this.link(keys[n1], keys[n2]);
-    }
-  },
-
-  startWibble: function() {
-    var wibble = this.startWibble.bind(this);
-    var distance = 50;
-    this.nodes.forEach(function(n)  {
-      var angle = Math.random() * 2*Math.PI;
-      n.x += Math.cos(angle) * distance;
-      n.y += Math.sin(angle) * distance;
-    });
-    this.setState({ nodes: this.nodes });
-    setTimeout(function() { wibble(); }, 1000);
+    this.setState({ crosslinks: crosslinks });
   }
 });
 
@@ -24341,7 +24356,11 @@ var sqrt = Math.sqrt;
 var Link = React.createClass({displayName: "Link",
 
   getInitialState: function() {
-    return { updated: 0 };
+    return {
+      from: false,
+      to: false,
+      updated: 0
+    };
   },
 
   componentWillMount: function() {
@@ -24350,9 +24369,13 @@ var Link = React.createClass({displayName: "Link",
 
   nodeMoved: function(evt) {
     var node = evt.detail.node;
-    if(node === this.props.from || node === this.props.to) {
+    if(node === this.state.from || node === this.state.to) {
       this.setState({ updated: this.state.updated++ });
     }
+  },
+
+  setNodes: function(from, to) {
+    this.setState({ from: from, to: to });
   },
 
   render: function() {
@@ -24360,9 +24383,11 @@ var Link = React.createClass({displayName: "Link",
   },
 
   generateStyle: function() {
-    var n1 = this.props.from;
-    var n2 = this.props.to;
+    var n1 = this.state.from;
+    var n2 = this.state.to;
+    if(!n1 || !n2) return {};
     var direction = this.props.direction;
+
 
     var x1 = n1.state.x,
         y1 = n1.state.y,
@@ -24378,7 +24403,7 @@ var Link = React.createClass({displayName: "Link",
 
     // align with node 1
     var transforms = [
-      "translate("+n1.state.x+"px,"+n1.state.y+"px)",
+      "translate("+x1+"px,"+y1+"px)",
       "rotate("+angle+"deg)"
     ];
 
@@ -24407,7 +24432,8 @@ var Node = React.createClass({displayName: "Node",
 
   getInitialState: function() {
     return {
-      label: this.props.label||"",
+      label: this.props.label || "",
+      value: this.props.value || false,
       x: this.props.x|0,
       y: this.props.y|0,
       offset: { x: 0, y: 0 },
