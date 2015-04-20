@@ -1,0 +1,16 @@
+{
+  "name": "css-node-graph",
+  "version": "1.0.0",
+  "description": "",
+  "main": "CSSNodeGraph.jsx",
+  "scripts": {
+    "test": "browserify -t [ reactify --es6 ] app.js -o build/app.js",
+    "start": "watch \"npm test\" ./src"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "hammerjs": "^2.0.4",
+    "react": "^0.13.2"
+  }
+}
