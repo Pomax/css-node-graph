@@ -1,32 +1,43 @@
 var uuid = 0;
 var React = require('react/addons');
 var Node = require('./Node.jsx');
-var Link = require('./Link.jsx');
+var Links = require('./Links.jsx');
+
+var GraphNode = require("./js/graph");
 
 var CSSNodeGraph = React.createClass({
-  statics: {
-    nextId: function() {
-      return uuid++;
+  load: function(value) {
+    var nodes = {};
+    nodes[value] = new GraphNode(value, value);
+    for (var limit=12, i=1, val=value, node, lval, rval; i<limit; i++) {
+      lval = val * 2;
+      if (!nodes[lval]) {
+        nodes[lval] = new GraphNode(lval, lval);
+        nodes[val].link(nodes[lval], "n/2", GraphNode.BACKWARD);
+        if (nodes[val/2]) { nodes[val/2].bow(nodes[lval], "4n"); }
+      } else {
+        nodes[val].bow(nodes[lval], "n/2", GraphNode.BACKWARD);    
+      }
+      rval = (val-1) / 3;
+      if (rval === Math.floor(rval)) {
+        if(!nodes[rval]) {
+          nodes[rval] = new GraphNode(rval, rval);
+          nodes[val].link(nodes[rval], "3n+1", GraphNode.BACKWARD);
+          if (nodes[(rval-1)/4]) { nodes[(rval-1)/4].bow(nodes[rval], "4n+1"); }
+        } else {
+          nodes[val].bow(nodes[rval], "3n+1", GraphNode.BACKWARD);    
+        }
+      }
+      val = lval;
     }
+    nodes[value].reflow(GraphNode.LADDER(100, 100));
+    console.log(nodes);
+    return nodes;
   },
 
   getInitialState: function() {
     return {
-      nodes: [],
-      links: [],
-      crosslinks: []
-    };
-  },
-
-  componentWillMount: function() {
-    this.nodes = this.state.nodes;
-    this.links = this.state.links;
-    this.nodeProps = {
-      // ...
-    };
-    this.linkProps = {
-      linkWidth: this.props.linkWidth || "3px",
-      linkColor: this.props.linkColor || "lightgrey"
+      nodes: this.load(1)
     };
   },
 
@@ -37,107 +48,48 @@ var CSSNodeGraph = React.createClass({
       userSelect: "none"
     };
 
+    var offset = {
+      x: 20,
+      y: 100
+    };
+
     return (
       <div>
         <div className="CSSNodeGraph" style={ style }>
-          <div className="nodes">{ this.generateNodes() }</div>
-          <div className="links">{ this.generateLinks() }</div>
+          <div className="nodes">{ this.generateNodes(offset) }</div>
+          <div className="links">{ this.generateLinks(offset) }</div>
         </div>
         <button onClick={this.testNodes}>add test Nodes</button>
       </div>
     );
   },
 
-  componentDidUpdate: function(prevProps, prevState) {
-    if(this.state.crosslinks.length > 0) {
-
-      var crosslinks = this.state.crosslinks.slice();
-      for(var i=crosslinks.length-1; i>=0; i--) {
-        var crosslink = crosslinks[i];
-        var link = this.refs["link" + crosslink.linkid];
-        var from = this.refs["node" + crosslink.from];
-        var to = this.refs["node" + crosslink.to];
-        link.setNodes(from, to);
-      }
-      this.setState({ crosslinks: [] });
-    }
-  },
-
-  addNode: function(label, value, x, y) {
-    var id = CSSNodeGraph.nextId();
-    var key = "node" + id;
-    this.nodes[id] = {
-      label: label,
-      value: value,
-      x: x||0,
-      y: y||0,
-      id: id,
-      key: key,
-      ref: key
-    };
-    Object.keys(this.nodeProps).forEach(p => { this.nodes[id][p] = this.nodeProps[p]; });
-    var nodes = Object.keys(this.nodes).map(id => this.nodes[id] );
-    this.setState({ nodes: nodes });
-    return id;
-  },
-
-  link: function(from, to, direction, label) {
-    direction = direction || 0;
-    label = label || "";
-    var id = CSSNodeGraph.nextId();
-    var key = "link" + id;
-    this.links[id] = {
-      from: this.nodes[from],
-      to: this.nodes[to],
-      direction: direction||0,
-      id: id,
-      key: key,
-      ref: key
-    };
-    Object.keys(this.linkProps).forEach(p => { this.links[id][p] = this.linkProps[p]; });
-    var links = Object.keys(this.links).map(id => this.links[id] );
-    this.setState({ links: links });
-    return id;
-  },
-
   // RENDERING
 
-  generateNodes: function() {
-    return this.state.nodes.map(n => <Node {...n} />);
+  generateNodes: function(offset) {
+    var nodes = this.state.nodes;
+    return Object.keys(nodes).map(k => {
+      var n = nodes[k];
+      return <Node node={n} key={"node" + n.content} onClick={this.loadNode(n.content)} offset={offset} />;
+    });
   },
 
-  generateLinks: function() {
-    return this.state.links.map(l => <Link {...l} />);
+  generateLinks: function(offset) {
+    var nodes = this.state.nodes;
+    return Object.keys(nodes).map(k => {
+      var n = nodes[k];
+      return <Links node={n} key={"link" + n.content} offset={offset} />
+    });
   },
 
-  // TESTING
+  // UTILITY
 
-  testNodes: function() {
-    var dims = this.getDOMNode().getBoundingClientRect();
-    var nodecount = 10;
-    var v = 1;
-    var root = this.addNode(v,v,
-      20 + Math.random()*(dims.width-40),
-      20 + Math.random()*(dims.height-40)
-    );
-    var crosslinks = [];
-    while(nodecount-->0) {
-      var vl = v*2,
-          vr = (v-1)/3,
-          left = this.addNode(v*2,v*2,
-            20 + Math.random()*(dims.width - 40),
-            20 + Math.random()*(dims.height - 40)
-          ),
-          right = (!!vr && vr == Math.floor(vr)) ? this.addNode((v-1)/3,(v-1)/3,
-            20 + Math.random()*(dims.width - 40),
-            20 + Math.random()*(dims.height - 40)
-          ) : false;
-      crosslinks.push({ from: root, to: left, linkid: this.link(root,left) });
-      if(right) { crosslinks.push({ from: root, to: right, linkid: this.link(root,right) }); }
-      v = vl;
-      root = left;
-    }
-    this.setState({ crosslinks: crosslinks });
+  loadNode: function(value) {
+    return function() {
+      this.setState({
+        nodes: this.load(value)
+      });
+    }.bind(this);
   }
 });
 

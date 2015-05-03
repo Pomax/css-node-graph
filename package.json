@@ -12,5 +12,10 @@
   "dependencies": {
     "hammerjs": "^2.0.4",
     "react": "^0.13.2"
+  },
+  "devDependencies": {
+    "browserify": "^10.0.0",
+    "reactify": "^1.1.0",
+    "watch": "^0.16.0"
   }
 }
