@@ -21888,7 +21888,6 @@ var Bows = React.createClass({displayName: "Bows",
     var spanStyle = {
       display: "block",
       position: "relative",
-      textAlign: "left",
       transformOrigin: "center center"
     };
 
@@ -21899,6 +21898,7 @@ var Bows = React.createClass({displayName: "Bows",
         spanStyle.top = "-1.25em";
       } else {
         style.marginTop = 0;
+        spanStyle.textAlign = "left";
         spanStyle.transform = "translate(0,-70px) rotate(-90deg)";
       }
     }

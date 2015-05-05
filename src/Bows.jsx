@@ -60,7 +60,6 @@ var Bows = React.createClass({
     var spanStyle = {
       display: "block",
       position: "relative",
-      textAlign: "left",
       transformOrigin: "center center"
     };
 
@@ -71,6 +70,7 @@ var Bows = React.createClass({
         spanStyle.top = "-1.25em";
       } else {
         style.marginTop = 0;
+        spanStyle.textAlign = "left";
         spanStyle.transform = "translate(0,-70px) rotate(-90deg)";
       }
     }
