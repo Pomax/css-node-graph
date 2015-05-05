@@ -9,15 +9,24 @@
       height: 300px;
       border: 1px solid black;
     }
-    h1, h2, p {
+    h1, h2, h3, h4, h5, h6 {
+      text-align: center;
+    }
+    h1, h2, h3, h4, h5, h6, p {
       font-family: Arial;
+    }
+    h4 {
+      margin-top: -1em;
     }
     </style>
   </head>
   <body>
-    <h1>Let's interactively examine the "reversed Collatz" graph</h1>
+    <header>
+      <h1>Let's interactively examine the "reversed Collatz" graph</h1>
+      <h4>By <a href="http://twitter.com/TheRealPomax">Pomax</a></h4>
+    </header>
 
-    <p>Now, while the below graphic looks a bit like a standard gif or maybe a d3.js graph, it's actually a React app backed by a simple JS graph implementation, and <em>fully interactive</em> in that you can pick any node you see, and that'll become the new focus root. Go on, <strong><em>click one</em></strong>. Oh right, and because it's just DOM + CSS, there's some CSS transitions thrown in for free because it looks nicer than an instant redraw.</p>
+    <p>While the below graphic looks a bit like a standard gif or maybe a d3.js graph, it's actually a React app backed by a simple JS graph implementation, and <em>fully interactive</em> in that you can pick any node you see, and that'll become the new focus root. <strong><em>Go on, click any node</em></strong>. Oh right, and because it's just DOM + CSS, there's some CSS transitions thrown in for free because it looks nicer than an instant redraw.</p>
 
     <div id="app"></div>
 
@@ -33,6 +42,8 @@
 
     <p>Well in that case you might appreciate that this is all just React components. The graph is an "app" (we need a better name for that, really) backed by a tiny JavaScript node graph library. The JS library knows nothing about "what things should look like" but it's good at creating linked nodes, and the React code knows nothing about "what graphs are" but is really good at making UI libraries, so there's a tiny bit of magic JS glue that marries the two things together, being a graph flow algorithm: it simply takes a graph, walks the nodes, and assigns each node an
     x/y position. That's all it does, and that's all it <em>needs</em> to do in order to make the graph library and React work together to create a really nice graphing solution.</p>
+
+    <p>Nodes? those are just divs. The straight connections are SVG right? No, they're just divs with height 0 and a top border. So, the curved bows are SVG, right? No, why would they be? They're just divs with border-radius. So are the vertical bow labels separate things then? Hell no, they're the bow's div content, just rotated back 90 degrees. HTML+CSS ftw. Along with <a href="https://facebook.github.io/react/">React.js</a> of course. React ftw².</p>
 
     <p>If you want to read through the source code, hit up <a href="http://github.com/Pomax/css-node-graph">http://github.com/Pomax/css-node-graph</a> and if you have any questions or remarks, feel free to reach out in the form of an issue filed on the repo, or just tweet at me at <a href="http://twitter.com/TheRealPomax">@TheRealPomax</a>.</p>
 
