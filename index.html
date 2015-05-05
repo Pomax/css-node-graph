@@ -6,14 +6,36 @@
     <style>
     .CSSNodeGraph {
       background: white;
-      width: 80vw;
-      height: 80vh;
+      height: 300px;
       border: 1px solid black;
+    }
+    h1, h2, p {
+      font-family: Arial;
     }
     </style>
   </head>
   <body>
+    <h1>Let's interactively examine the "reversed Collatz" graph</h1>
+
+    <p>Now, while the below graphic looks a bit like a standard gif or maybe a d3.js graph, it's actually a React app backed by a simple JS graph implementation, and <em>fully interactive</em> in that you can pick any node you see, and that'll become the new focus root. Go on, <strong><em>click one</em></strong>. Oh right, and because it's just DOM + CSS, there's some CSS transitions thrown in for free because it looks nicer than an instant redraw.</p>
+
     <div id="app"></div>
+
+    <h2>Wait, so, what am I actually looking at?</h2>
+
+    <p>Oh, right, sorry: this is a simple graph visualisation of the "reversed" Collatz rules. The plain Collatz rules are kind of a little mathematical magic trick: pick any number, <em>n</em>, and if it's even, divide it by two. If it was odd, multiply it by three and then add one. The "Collatz conjecture" is that if you repeat this "algorithm", you will always end at 1. It might take a bit of time, but you will. I call this a magic trick, because no one's been able to prove this is true, let alone why this would be true. It's in a fun little group of hypotheses about how numbers work that mathematicians assume is true, but just don't have a proof for (another one such hypothesis is the Riemann hypothesis, which says "if we apply this one simple function to the natural numbers, then all the primes numbers will end up on the same straight line")</p>
+
+    <p>The graph above shows the opposite of the Collatz procedure: instead of taking a number and reducing it to 1, we start at 1 and apply the Collatz rules "in reverse", so any number can generate two new numbers by multiplying it by 2, as well as subtracting 1 and then dividing it by 3. The first step always yields a new number, the second step might yield a fraction, which we disregard entirely. What does the "number tree" look like when we do that? You're looking at it.</p> 
+
+    <p>There's interesting properties here. We start with the numbers 1, 2 and 3, but almost immediately the number 4 pops up as an omnipresent number. We also see that if we have a number that yields an odd number from an even number, we can add them together to find "the next" odd number, or we can multiply the odd number by 4 and add 1, and get the same number. This has the "fun" consequence that the ratio between these numbers converges to 3, as the numbers get bigger and bigger. Finally, we see that we can actually rephrase the Collatz conjecture in a few interesting ways: we don't just "end up at 1", we apparently always end up at "some number that is a power of 2" (including 2 to the power 0, which is 1). Is that useful? Sort of, it's kind of hard to tell because it's entirely possible that mathematics doesn't actually have a framework that lets us prove the Collatz conjecture. But it's certainly interesting!</p> 
+
+    <h2>What if I care about webby stuff, but not maths?</h2>
+
+    <p>Well in that case you might appreciate that this is all just React components. The graph is an "app" (we need a better name for that, really) backed by a tiny JavaScript node graph library. The JS library knows nothing about "what things should look like" but it's good at creating linked nodes, and the React code knows nothing about "what graphs are" but is really good at making UI libraries, so there's a tiny bit of magic JS glue that marries the two things together, being a graph flow algorithm: it simply takes a graph, walks the nodes, and assigns each node an
+    x/y position. That's all it does, and that's all it <em>needs</em> to do in order to make the graph library and React work together to create a really nice graphing solution.</p>
+
+    <p>If you want to read through the source code, hit up <a href="http://github.com/Pomax/css-node-graph">http://github.com/Pomax/css-node-graph</a> and if you have any questions or remarks, feel free to reach out in the form of an issue filed on the repo, or just tweet at me at <a href="http://twitter.com/TheRealPomax">@TheRealPomax</a>.</p>
+
     <script src="build/app.js"></script>
   </body>
 </html>

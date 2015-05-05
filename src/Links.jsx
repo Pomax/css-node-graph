@@ -1,5 +1,4 @@
 var React = require('react');
-var CSSNodeGraph
 
 var PI = Math.PI;
 var atan2 = Math.atan2;
@@ -12,7 +11,7 @@ var Links = React.createClass({
   },
 
   generateLinks: function() {
-    return this.props.node.links.map(this.formLink);//.concat(this.props.node.bows.map(this.formLink));
+    return this.props.node.links.map(this.formLink);
   },
 
   formLink: function(link) {
@@ -52,7 +51,7 @@ var Links = React.createClass({
 
     var key = n1.content + "-" + n2.content;
 
-    return <div style={style} key={key}/>;
+    return <div className="link" style={style} key={key}/>;
   }
 
 });

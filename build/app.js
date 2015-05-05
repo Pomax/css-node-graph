@@ -96,7 +96,7 @@ var CSSNodeGraph = require('./src/CSSNodeGraph.jsx');
 React.render(React.createElement(CSSNodeGraph, null), document.getElementById('app'));
 
 
-},{"./src/CSSNodeGraph.jsx":176,"react":175}],3:[function(require,module,exports){
+},{"./src/CSSNodeGraph.jsx":177,"react":175}],3:[function(require,module,exports){
 module.exports = require('./lib/ReactWithAddons');
 
 },{"./lib/ReactWithAddons":103}],4:[function(require,module,exports){
@@ -21826,46 +21826,112 @@ module.exports = warning;
 module.exports = require('./lib/React');
 
 },{"./lib/React":33}],176:[function(require,module,exports){
+var React = require('react');
+var Node = require('./js/graph');
+
+var PI = Math.PI;
+var atan2 = Math.atan2;
+var sqrt = Math.sqrt;
+
+var Bows = React.createClass({displayName: "Bows",
+
+  render: function() {
+    return React.createElement("div", null,  this.generateBows() );
+  },
+
+  generateBows: function() {
+    return this.props.node.bows.map(this.formBow);
+  },
+
+  formBow: function(link) {
+    var n1 = this.props.node;
+    var n2 = link.node;
+    if(!n1 || !n2) return {};
+
+    var x1 = n1.position.x,
+        y1 = n1.position.y,
+        x2 = n2.position.x,
+        y2 = n2.position.y,
+        dx = x2 - x1,
+        dy = y2 - y1;
+
+    var radToDeg = 180 / Math.PI,
+        angle = (Math.atan2(dy,dx) * radToDeg)|0;
+
+    var dist = sqrt(dx*dx + dy*dy)|0;
+
+    if (link.orientation === Node.RIGHT) {
+      x1 += 30;
+    }
+
+    // align with node 1
+    var transforms = [
+      "translate("+(15 + x1 + this.props.offset.x)+"px,"+(10 + y1 + this.props.offset.y)+"px)",
+      "rotate("+angle+"deg)"
+    ];
+
+    var style = {
+      position: "absolute",
+      transform: transforms.join(" "),
+      transformOrigin: "top left",
+      width: dist,
+      height: 30,
+      border: "0px solid",
+      borderColor: "rgba(123, 123, 255, 0.5)",
+      borderRadius: 30,
+      zIndex: 1,
+      userSelect: "none",
+      textAlign: "center",
+      transition: "all 1s ease"
+    };
+
+    var spanStyle = {
+      display: "block",
+      position: "relative",
+      textAlign: "left",
+      transformOrigin: "center center"
+    };
+
+    if (link.orientation === Node.ABOVE || link.orientation === Node.RIGHT) {
+      style.borderTopWidth = (this.props.linkWidth || 2)
+      if (link.orientation === Node.ABOVE) {
+        style.marginTop = -style.height;
+        spanStyle.top = "-1.25em";
+      } else {
+        style.marginTop = 0;
+        spanStyle.transform = "translate(0,-70px) rotate(-90deg)";
+      }
+    }
+    else if (link.orientation === Node.BELOW) {
+      style.borderBottomWidth = (this.props.linkWidth || 2)
+      spanStyle.bottom = "-2em";
+    }
+
+    var key = n1.content + "-" + n2.content;
+
+    return React.createElement("div", {className: "bow", style: style, key: key}, 
+      React.createElement("span", {style: spanStyle},  link.label)
+    );
+  }
+
+});
+
+module.exports = Bows;
+
+
+},{"./js/graph":181,"react":175}],177:[function(require,module,exports){
 var uuid = 0;
 var React = require('react/addons');
 var Node = require('./Node.jsx');
 var Links = require('./Links.jsx');
-
-var GraphNode = require("./js/graph");
+var Bows = require('./Bows.jsx');
+var load = require('./js/load');
 
 var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
-  load: function(value) {
-    var nodes = {};
-    nodes[value] = new GraphNode(value, value);
-    for (var limit=12, i=1, val=value, node, lval, rval; i<limit; i++) {
-      lval = val * 2;
-      if (!nodes[lval]) {
-        nodes[lval] = new GraphNode(lval, lval);
-        nodes[val].link(nodes[lval], "n/2", GraphNode.BACKWARD);
-        if (nodes[val/2]) { nodes[val/2].bow(nodes[lval], "4n"); }
-      } else {
-        nodes[val].bow(nodes[lval], "n/2", GraphNode.BACKWARD);    
-      }
-      rval = (val-1) / 3;
-      if (rval === Math.floor(rval)) {
-        if(!nodes[rval]) {
-          nodes[rval] = new GraphNode(rval, rval);
-          nodes[val].link(nodes[rval], "3n+1", GraphNode.BACKWARD);
-          if (nodes[(rval-1)/4]) { nodes[(rval-1)/4].bow(nodes[rval], "4n+1"); }
-        } else {
-          nodes[val].bow(nodes[rval], "3n+1", GraphNode.BACKWARD);    
-        }
-      }
-      val = lval;
-    }
-    nodes[value].reflow(GraphNode.LADDER(100, 100));
-    console.log(nodes);
-    return nodes;
-  },
 
   getInitialState: function() {
     return {
-      nodes: this.load(1)
+      nodes: load(1)
     };
   },
 
@@ -21882,12 +21948,10 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
     };
 
     return (
-      React.createElement("div", null, 
-        React.createElement("div", {className: "CSSNodeGraph", style:  style }, 
-          React.createElement("div", {className: "nodes"},  this.generateNodes(offset) ), 
-          React.createElement("div", {className: "links"},  this.generateLinks(offset) )
-        ), 
-        React.createElement("button", {onClick: this.testNodes}, "add test Nodes")
+      React.createElement("div", {className: "CSSNodeGraph", style:  style }, 
+        React.createElement("div", {className: "nodes"},  this.generateNodes(offset) ), 
+        React.createElement("div", {className: "links"},  this.generateLinks(offset) ), 
+        React.createElement("div", {className: "bows"},   this.generateBows(offset) )
       )
     );
   },
@@ -21898,7 +21962,7 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
     var nodes = this.state.nodes;
     return Object.keys(nodes).map(function(k)  {
       var n = nodes[k];
-      return React.createElement(Node, {node: n, key: "node" + n.content, onClick: this.loadNode(n.content), offset: offset});
+      return React.createElement(Node, {node: n, key: "node" + k, onClick: this.loadNode(n.content), offset: offset});
     }.bind(this));
   },
 
@@ -21906,7 +21970,15 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
     var nodes = this.state.nodes;
     return Object.keys(nodes).map(function(k)  {
       var n = nodes[k];
-      return React.createElement(Links, {node: n, key: "link" + n.content, offset: offset})
+      return React.createElement(Links, {node: n, key: "link" + k, offset: offset})
+    });
+  },
+
+  generateBows: function(offset) {
+    var nodes = this.state.nodes;
+    return Object.keys(nodes).map(function(k)  {
+      var n = nodes[k];
+      return React.createElement(Bows, {node: n, key: "link" + k, offset: offset})
     });
   },
 
@@ -21915,7 +21987,7 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
   loadNode: function(value) {
     return function() {
       this.setState({
-        nodes: this.load(value)
+        nodes: load(value)
       });
     }.bind(this);
   }
@@ -21924,9 +21996,8 @@ var CSSNodeGraph = React.createClass({displayName: "CSSNodeGraph",
 module.exports = CSSNodeGraph;
 
 
-},{"./Links.jsx":177,"./Node.jsx":178,"./js/graph":180,"react/addons":3}],177:[function(require,module,exports){
+},{"./Bows.jsx":176,"./Links.jsx":178,"./Node.jsx":179,"./js/load":182,"react/addons":3}],178:[function(require,module,exports){
 var React = require('react');
-var CSSNodeGraph
 
 var PI = Math.PI;
 var atan2 = Math.atan2;
@@ -21939,7 +22010,7 @@ var Links = React.createClass({displayName: "Links",
   },
 
   generateLinks: function() {
-    return this.props.node.links.map(this.formLink);//.concat(this.props.node.bows.map(this.formLink));
+    return this.props.node.links.map(this.formLink);
   },
 
   formLink: function(link) {
@@ -21979,7 +22050,7 @@ var Links = React.createClass({displayName: "Links",
 
     var key = n1.content + "-" + n2.content;
 
-    return React.createElement("div", {style: style, key: key});
+    return React.createElement("div", {className: "link", style: style, key: key});
   }
 
 });
@@ -21987,17 +22058,19 @@ var Links = React.createClass({displayName: "Links",
 module.exports = Links;
 
 
-},{"react":175}],178:[function(require,module,exports){
+},{"react":175}],179:[function(require,module,exports){
 var React = require('react');
 
 var Node = React.createClass({displayName: "Node",
   render: function() {
+    var node = this.props.node;
     var style = {
       position: "absolute",
-      transform: "translate(" + (this.props.node.position.x + this.props.offset.x) + "px, " + (this.props.node.position.y + this.props.offset.y) + "px)",
-      border: "3px solid rgb(99,175,254)",
+      transform: "translate(" + (node.position.x + this.props.offset.x) + "px, " + (node.position.y + this.props.offset.y) + "px)",
+      border: "3px solid rgba(99,175,254," + (node.shadow ? 0.5 : 1) + ")",
       boxShadow: "0 0 3px rgb(99,175,254)",
       backgroundColor: "white",
+      color: "rgba(0,0,0," + (node.shadow ? 0.5 : 1) + ")",
       zIndex: 2,
       borderRadius: "999em",
       minWidth: "1em",
@@ -22006,16 +22079,16 @@ var Node = React.createClass({displayName: "Node",
       padding: "0 3px",
       cursor: "pointer",
       userSelect: "none",
-      transition: "all 1s ease"
+      transition: "all 1s ease",
     };
-    return (React.createElement("div", {className: "node", style: style, onClick: this.props.onClick},  this.props.node.label));
+    return (React.createElement("div", {className: "node", style: style, onClick: this.props.onClick},  node.label));
   }
 });
 
 module.exports = Node;
 
 
-},{"react":175}],179:[function(require,module,exports){
+},{"react":175}],180:[function(require,module,exports){
 module.exports = {
   /**
    * Straight up grid flow
@@ -22040,17 +22113,19 @@ module.exports = {
 };
 
 
-},{}],180:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 var linktypes = ["UNDIRECTED","FORWARD","BACKWARD", "BIDIRECTIONAL"];
+var orientations = ["ABOVE", "RIGHT", "BELOW", "LEFT", "STRAIGHT"];
 
 var uid = (function() {
   var id = 1; return function() { return id++; }
 }());
 
-var Link = function(node, label, direction) {
+var Link = function(node, label, direction, orientation) {
   this.node = node;
   this.label = label;
   this.direction = direction;
+  this.orientation = orientation || Node.STRAIGHT;
 };
 
 var Node = function(content, label) {
@@ -22071,9 +22146,9 @@ Node.prototype = {
     type = type || Node.FORWARD;
     this.links.push(new Link(node, label, type));
 	},
-  bow: function(node, label, type) {
+  bow: function(node, label, type, orientation) {
     type = type || Node.FORWARD;
-    this.bows.push(new Link(node, label, type));  
+    this.bows.push(new Link(node, label, type, orientation));
   },
   reflow: function(algorithm) {
     algorithm(this, this.position.x, this.position.y);
@@ -22081,7 +22156,7 @@ Node.prototype = {
 };
 
 // link constants
-linktypes.forEach(function(v,idx) {
+linktypes.concat(orientations).forEach(function(v,idx) {
   Node[v] = idx;
 });
 
@@ -22094,4 +22169,67 @@ Object.keys(algorithms).forEach(function(name) {
 module.exports = Node;
 
 
-},{"./algorithms":179}]},{},[2]);
+},{"./algorithms":180}],182:[function(require,module,exports){
+var Node = require("./graph");
+
+module.exports = function load(value) {
+
+  var limit = 10;
+  if(typeof document !== "undefined") {
+    limit = 2 + Math.ceil(document.body.getBoundingClientRect().width / 100);
+  }
+
+  var nodes = {};
+  nodes[value] = new Node(value, value);
+
+  for (var i=1, val=value, node, lval, rval; i<limit; i++) {
+
+    lval = val * 2;
+    lnode = new Node(lval, lval);
+    if (!nodes[lval]) {
+      nodes[lval] = lnode;
+    } else {
+      lnode.shadow = true;
+      nodes["shadow"+lval] = lnode;
+    }
+    nodes[val].link(lnode, "n/2", Node.BACKWARD);
+  
+    rval = (val-1) / 3;
+    if (rval === Math.floor(rval)) {
+      rnode = new Node(rval, rval);
+      if(!nodes[rval]) {
+        nodes[rval] = rnode;
+      } else {
+        rnode.shadow = true;
+        nodes["shadow"+rval] = rnode;
+      }
+      nodes[val].link(rnode, "3n+1", Node.BACKWARD);
+      nodes[val].bow(rnode, "⇒ "+(val+rval), false, Node.RIGHT);
+
+      var rbval = (rval-1)/4;
+      if (nodes[rbval]) {
+        var rbnode = nodes["shadow"+rbval];
+        if(!rbnode) { rbnode = nodes[rbval]; }
+        rbnode.bow(rnode, "4n+1", Node.FORWARD, Node.BELOW);
+        if(nodes[val/4]) {
+          nodes[val/4].bow(nodes[val], "4n", Node.FORWARD, Node.ABOVE);
+        }
+      }
+    }
+
+    val = lval;
+  }
+  nodes[value].reflow(Node.LADDER(100, 100));
+
+  var sval = value%2===0 ? value / 2 : 3 * value + 1;
+  var superparent = new Node(sval, sval);
+  if(nodes[sval]) { nodes["superparent"] = superparent; } else { nodes[sval] = superparent; }
+  superparent.link(nodes[value]);
+  superparent.position = { x: 0, y: -70 };
+  superparent.shadow = true;
+
+  return nodes;
+};
+
+
+},{"./graph":181}]},{},[2]);
