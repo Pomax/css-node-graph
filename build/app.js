@@ -22093,12 +22093,12 @@ module.exports = {
   /**
    * Straight up grid flow
    */
-	LADDER: function(xscale, yscale) {
+  LADDER: function(xscale, yscale) {
     yscale = yscale || xscale;
 
     // first children are spaced x-scale, second children are spaced y-scale.
     // This may leave nodes overlapping. We are okay with that here.
-	  return function reflow(node, x, y) {
+    return function reflow(node, x, y) {
       node.position.x = parseInt(x,10) || 0;
       node.position.y = parseInt(y,10) || 0;
       var links = node.links;
@@ -22109,7 +22109,7 @@ module.exports = {
         reflow( links[1].node, node.position.x, node.position.y + yscale);
       }
     };
-	}
+  }
 };
 
 
@@ -22172,18 +22172,26 @@ module.exports = Node;
 },{"./algorithms":180}],182:[function(require,module,exports){
 var Node = require("./graph");
 
+
+/**
+ * Generate a partial reversed Collatz sequence
+ */
 module.exports = function load(value) {
 
+  // let's pick a number of nodes to generated based on the browser's width.
   var limit = 10;
   if(typeof document !== "undefined") {
     limit = 2 + Math.ceil(document.body.getBoundingClientRect().width / 100);
   }
 
+  // start at the passed value as root
   var nodes = {};
   nodes[value] = new Node(value, value);
 
+  // generate subsequent nodes
   for (var i=1, val=value, node, lval, rval; i<limit; i++) {
 
+    // "even" generation
     lval = val * 2;
     lnode = new Node(lval, lval);
     if (!nodes[lval]) {
@@ -22194,6 +22202,7 @@ module.exports = function load(value) {
     }
     nodes[val].link(lnode, "n/2", Node.BACKWARD);
   
+    // "odd" generation
     rval = (val-1) / 3;
     if (rval === Math.floor(rval)) {
       rnode = new Node(rval, rval);
@@ -22221,6 +22230,8 @@ module.exports = function load(value) {
   }
   nodes[value].reflow(Node.LADDER(100, 100));
 
+  // And in order to get back if we click through the sequence,
+  // add a shadow node that acts as the root's parent:
   var sval = value%2===0 ? value / 2 : 3 * value + 1;
   var superparent = new Node(sval, sval);
   if(nodes[sval]) { nodes["superparent"] = superparent; } else { nodes[sval] = superparent; }
